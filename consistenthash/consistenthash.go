@@ -38,6 +38,7 @@ func (this *Map) Add(keys ...string) {
 	sort.Ints(this.keys)
 }
 
+// Get 哈希一致性
 func (this *Map) Get(key string) string {
 	if len(this.keys) == 0 {
 		return ""
