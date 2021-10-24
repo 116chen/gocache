@@ -6,11 +6,14 @@ import (
 )
 
 type cache struct {
-	mu         sync.Mutex
+	// 并发控制
+	mu sync.Mutex
+	// 并发不安全的LRU
 	lru        *lru.Cache
 	cacheBytes int64
 }
 
+// 并发安全的LRU.add
 func (this *cache) add(key string, value ByteView) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
@@ -20,6 +23,7 @@ func (this *cache) add(key string, value ByteView) {
 	this.lru.Add(key, value)
 }
 
+// 并发安全的LRU.get
 func (this *cache) get(key string) (value ByteView, ok bool) {
 	this.mu.Lock()
 	defer this.mu.Unlock()

@@ -19,11 +19,16 @@ func (this GetterFunc) Get(key string) ([]byte, error) {
 }
 
 type Group struct {
-	name      string
-	getter    Getter
+	//group name
+	name string
+	// 缓存不存在的回调方法
+	getter Getter
+	// 本机缓存
 	mainCache cache
-	peers     PeerPicker
-	loader    *singalflight.Group
+	// 远端节点
+	peers PeerPicker
+	// 并发控制器
+	loader *singalflight.Group
 }
 
 var (
@@ -57,6 +62,7 @@ func GetGroup(name string) *Group {
 	return groups[name]
 }
 
+// Get 获取缓存值
 func (this *Group) Get(key string) (ByteView, error) {
 	// key is empty, return...
 	if key == "" {
@@ -68,12 +74,16 @@ func (this *Group) Get(key string) (ByteView, error) {
 		return value, nil
 	}
 	// get value from db or remotes if cache is nonexistent...
+
 	return this.load(key)
 }
 
+// load 从远端节点或DB获取缓存值
 func (this *Group) load(key string) (ByteView, error) {
+	// 并发控制
 	view, err := this.loader.Do(key, func() (interface{}, error) {
 		if this.peers != nil {
+			// 远端节点获取
 			if peer, ok := this.peers.PickPeer(key); ok {
 				// 远端找不到，应该继续在本机找，而不是报错返回
 				if value, err := this.getFromPeer(peer, key); err == nil {
@@ -82,6 +92,7 @@ func (this *Group) load(key string) (ByteView, error) {
 			}
 			log.Println("peer not found. key =", key)
 		}
+		// DB获取
 		return this.loadLocally(key)
 	})
 	if err != nil {
@@ -90,6 +101,7 @@ func (this *Group) load(key string) (ByteView, error) {
 	return view.(ByteView), nil
 }
 
+// loadLocally 利用回调方法获取数据
 func (this *Group) loadLocally(key string) (ByteView, error) {
 	// use callback function to get value...
 	tmpValue, err := this.getter.Get(key)
@@ -103,10 +115,12 @@ func (this *Group) loadLocally(key string) (ByteView, error) {
 
 }
 
+// populateCache 填充缓存
 func (this *Group) populateCache(key string, view ByteView) {
 	this.mainCache.add(key, view)
 }
 
+// RegisterPeers 本机和远端节点建立关联
 func (this *Group) RegisterPeers(peers PeerPicker) {
 	once.Do(func() {
 		if peers == nil {
@@ -116,6 +130,7 @@ func (this *Group) RegisterPeers(peers PeerPicker) {
 	})
 }
 
+// getFromPeer protobuf通信从远端节点获取数据
 func (this *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
 	req := &pb.Request{
 		Group: this.name,

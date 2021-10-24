@@ -19,11 +19,15 @@ const (
 )
 
 type HTTPPool struct {
-	self        string
-	basePath    string
-	mu          sync.Mutex
-	peers       *consistenthash.Map
-	httpGetters map[string]*httpGetter // keyed by e.g. "http://10.0.0.2:8888"
+	// 本机{ip:port}
+	self string
+	// e.g. "/gocache/"
+	basePath string
+	mu       sync.Mutex
+	// 哈希一致性的实现
+	peers *consistenthash.Map
+	// keyed by e.g. "http://10.0.0.2:8888"
+	httpGetters map[string]*httpGetter
 }
 
 func NewHttpPool(self string) *HTTPPool {
@@ -37,7 +41,9 @@ func (this *HTTPPool) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", this.self, fmt.Sprintf(format, v...))
 }
 
+// ServeHTTP 接收HTTP的请求并返回响应
 func (this *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// 参数校验
 	if !strings.HasPrefix(r.URL.Path, this.basePath) {
 		http.Error(w, "check path. ps: /gocache/{groupName}/{key}", http.StatusNotFound)
 		return
@@ -52,6 +58,7 @@ func (this *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	groupName, key := params[0], params[1]
 	this.Log("groupName=%s key=%s", groupName, key)
 
+	// 获取group
 	group := GetGroup(groupName)
 	if group == nil {
 		http.Error(w, "group not found. groupName="+groupName, http.StatusOK)
@@ -64,6 +71,7 @@ func (this *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// proto.Marshal
 	body, err := proto.Marshal(&pb.Response{Value: view.ByteSlice()})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusOK)
@@ -74,6 +82,7 @@ func (this *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(body)
 }
 
+// Set 注册兄弟节点
 func (this *HTTPPool) Set(peers ...string) {
 	this.mu.Lock()
 	defer this.mu.Unlock()
@@ -102,6 +111,7 @@ func (this *httpGetter) Log(format string, v ...interface{}) {
 	log.Printf("[Server %s] %s", this.baseUrl, fmt.Sprintf(format, v...))
 }
 
+// Get 请求远端节点获取数据的Get 通过HTTP协议交互，Protobuf序列化....
 func (this *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	this.Log("peer receive a request... group = %s, key = %s", in.GetGroup(), in.GetKey())
 	u := fmt.Sprintf("%v%v/%v", this.baseUrl, url.QueryEscape(in.GetGroup()), url.QueryEscape(in.GetKey()))

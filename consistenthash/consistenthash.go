@@ -9,10 +9,14 @@ import (
 type Hash func(key []byte) uint32
 
 type Map struct {
-	hash     Hash
+	// 自定义hash函数
+	hash Hash
+	// 每个实例节点对应虚拟节点个数（包括自己）
 	replicas int
-	keys     []int
-	hashMap  map[int]string
+	// 所有节点的hashCode
+	keys []int
+	// 虚拟节点{hashCode}---->实例节点的{ip:port}
+	hashMap map[int]string
 }
 
 func NewMap(hash Hash, replicas int) *Map {
@@ -27,6 +31,7 @@ func NewMap(hash Hash, replicas int) *Map {
 	return m
 }
 
+// Add 添加虚拟节点
 func (this *Map) Add(keys ...string) {
 	for _, key := range keys {
 		for i := 0; i < this.replicas; i++ {
@@ -38,7 +43,7 @@ func (this *Map) Add(keys ...string) {
 	sort.Ints(this.keys)
 }
 
-// Get 哈希一致性
+// Get 采用哈希一致性获取实例节点的{ip:port}
 func (this *Map) Get(key string) string {
 	if len(this.keys) == 0 {
 		return ""
