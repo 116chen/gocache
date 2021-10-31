@@ -1,0 +1,24 @@
+raft-config:
+  server-name: myraft-1
+  server-id: 1
+  log-store: /logs/n1/log_store_1.bolt
+  stable-store: /logs/n1/stable_store_1.bolt
+  transport: 127.0.0.1:3001
+  role: master
+  servers:
+    - id: 1
+      address: 127.0.0.1:3001
+    - id: 2
+      address: 127.0.0.1:3002
+    - id: 3
+      address: 127.0.0.1:3003
+peer-nodes-config:
+  port: 3001
+  is-api: false
+  servers:
+    - id: 1
+      address: 127.0.0.1:3001
+    - id: 2
+      address: 127.0.0.1:4001
+    - id: 3
+      address: 127.0.0.1:5001

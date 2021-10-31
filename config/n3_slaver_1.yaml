@@ -1,0 +1,26 @@
+raft-config:
+  server-name: myraft-3
+  server-id: 3
+  log-store: /logs/n3/log_store.bolt
+  stable-store: /logs/n3/stable_store.bolt
+  transport: 127.0.0.1:5002
+  role: slaver
+  servers:
+    - id: 1
+      address: 127.0.0.1:5001
+    - id: 2
+      address: 127.0.0.1:5002
+    - id: 3
+      address: 127.0.0.1:5003
+
+
+peer-nodes-config:
+  port: 5001
+  is-api: false
+  servers:
+    - id: 1
+      address: 127.0.0.1:3001
+    - id: 2
+      address: 127.0.0.1:4001
+    - id: 3
+      address: 127.0.0.1:5001

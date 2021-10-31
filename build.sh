@@ -1,15 +1,16 @@
 #!/bin/bash
 trap "rm server;kill 0" EXIT
 
+rm -rf ./logs/n1/*
+
 go build -o server
-./server -port=8001 &
-./server -port=8002 &
-./server -port=8003 -api=1 &
-
-sleep 2
-echo ">>> start test"
-curl "http://localhost:9999/api?key=Tom" &
-curl "http://localhost:9999/api?key=Tom" &
-curl "http://localhost:9999/api?key=Tom" &
-
+./server -c ./config/n1_master.yaml &
+./server -c ./config/n1_slaver_1.yaml &
+./server -c ./config/n1_slaver_2.yaml
+#./server -c ./config/n2_master.yaml &
+#./server -c ./config/n2_slaver_1.yaml &
+#./server -c ./config/n2_slaver_2.yaml &
+#./server -c ./config/n3_master.yaml &
+#./server -c ./config/n3_slaver_1.yaml &
+#./server -c ./config/n3_slaver_2.yaml
 wait
